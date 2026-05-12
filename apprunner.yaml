@@ -14,5 +14,5 @@ build:
         - name: PORT
           value: "8000"
       secrets: 
-        - name: GOOGLE_API_KEY
-          value-from: "arn:aws:secretsmanager:eu-west-2:123456789012:secret:pagespeed-mcp/google-api-key-AbCdEf"
+        - name: PAGESPEED_API_KEY
+          value-from: "arn:aws:secretsmanager:eu-west-2:180796021917:secret:PAGESPEED_API_KEY-5w51dt"
