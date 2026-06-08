@@ -1,6 +1,7 @@
 import os
 import httpx
 from fastmcp import FastMCP
+from fastapi import FastAPI
 
 API_KEY = os.environ["PAGESPEED_API_KEY"]
 BASE_URL = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
