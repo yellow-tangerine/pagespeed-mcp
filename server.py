@@ -7,6 +7,10 @@ BASE_URL = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
 
 mcp = FastMCP("pagespeed-insights")
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
 
 async def _fetch(url: str, strategy: str, categories: list[str]) -> dict:
     params = [("url", url), ("key", API_KEY), ("strategy", strategy)]
