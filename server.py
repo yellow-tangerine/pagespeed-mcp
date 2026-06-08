@@ -5,6 +5,8 @@ from fastmcp import FastMCP
 API_KEY = os.environ["PAGESPEED_API_KEY"]
 BASE_URL = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
 
+app = FastAPI()  # ← Define app first
+
 mcp = FastMCP("pagespeed-insights")
 
 @app.get("/health")
