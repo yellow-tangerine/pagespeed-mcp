@@ -3,20 +3,32 @@ import httpx
 from fastmcp import FastMCP
 from fastapi import FastAPI
 
-API_KEY = os.environ["PAGESPEED_API_KEY"]
 BASE_URL = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
 
-app = FastAPI()  # ← Define app first
+
 
 mcp = FastMCP("pagespeed-insights")
+app = FastAPI()  # ← Define app first
+
+@app.get("/")
+async def root():
+    return {"status": "ok"}
+
 
 @app.get("/health")
 async def health():
     return {"status": "ok"}
 
 
+# Get API key only when needed, not at import time
+def get_api_key():
+    return os.environ.get("PAGESPEED_API_KEY")
+
+
+
+
 async def _fetch(url: str, strategy: str, categories: list[str]) -> dict:
-    params = [("url", url), ("key", API_KEY), ("strategy", strategy)]
+    params = [("url", url), ("key", get_api_key()), ("strategy", strategy)]
     for cat in categories:
         params.append(("category", cat))
     async with httpx.AsyncClient(timeout=120.0) as client:
@@ -138,6 +150,9 @@ async def get_element_analysis(url: str, strategy: str = "mobile") -> dict:
         result["lazy_loaded_lcp_warning"] = True
 
     return result
+
+
+app.mount("/mcp", mcp.http_app(path="/"))
 
 
 if __name__ == "__main__":
