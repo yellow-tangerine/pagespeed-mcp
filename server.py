@@ -10,31 +10,21 @@ BASE_URL = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
 mcp = FastMCP("pagespeed-insights")
 app = FastAPI()  # ← Define app first
 
-@app.get("/")
-async def root():
-    return {"status": "ok"}
-
-
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
-
-
-# Get API key only when needed, not at import time
-def get_api_key():
-    return os.environ.get("PAGESPEED_API_KEY")
-
-
-
 
 async def _fetch(url: str, strategy: str, categories: list[str]) -> dict:
     params = [("url", url), ("key", get_api_key()), ("strategy", strategy)]
     for cat in categories:
         params.append(("category", cat))
     async with httpx.AsyncClient(timeout=120.0) as client:
-        r = await client.get(BASE_URL, params=params)
-        r.raise_for_status()
-        return r.json()
+        try:
+            r = await client.get(BASE_URL, params=params)
+            r.raise_for_status()
+            return r.json()
+        except httpx.HTTPStatusError as e:
+            raise RuntimeError(
+                f"PageSpeed API returned {e.response.status_code} "
+                f"for {e.request.url.path}"
+            ) from None
 
 
 @mcp.tool()
@@ -155,6 +145,25 @@ async def get_element_analysis(url: str, strategy: str = "mobile") -> dict:
 app.mount("/mcp", mcp.http_app(path="/"))
 
 
+def get_api_key():
+    raw = os.environ["PAGESPEED_API_KEY"]
+    try:
+        return json.loads(raw)["pagespeed-insights"]
+    except (json.JSONDecodeError, KeyError, TypeError):
+        # already a bare key string
+        return raw
+
+# Build the MCP ASGI app, then the FastAPI app that shares its lifespan
+mcp_app = mcp.http_app(path="/mcp")
+app = FastAPI(lifespan=mcp_app.lifespan)   # <-- the line that makes MCP actually work
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+app.mount("/", mcp_app)   # MCP served at /mcp, health at /health
+
 if __name__ == "__main__":
+    import uvicorn
     port = int(os.environ.get("PORT", 8000))
-    mcp.run(transport="http", host="0.0.0.0", port=port, path="/mcp")
+    uvicorn.run(app, host="0.0.0.0", port=port)
