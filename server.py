@@ -2,6 +2,7 @@ import os
 import httpx
 from fastmcp import FastMCP
 from fastapi import FastAPI
+import json
 
 BASE_URL = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
 
